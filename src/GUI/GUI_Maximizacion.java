@@ -29,6 +29,7 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
         initComponents();
         this.jPanel_IngresoFuncion.setVisible(false);
         this.jPanel_Solucion.setVisible(false);
+        this.lbl_iteracion.setVisible(false);
     }
 
     /**
@@ -56,8 +57,10 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
         jPanel_Solucion = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable_solucion = new javax.swing.JTable();
+        lbl_iteracion = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Metodo Simplex - Maximización");
 
         lbl_nRestricciones.setText("N° de Restricciones");
 
@@ -189,20 +192,28 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
         ));
         jScrollPane2.setViewportView(jTable_solucion);
 
+        lbl_iteracion.setText("Iteracion: ");
+
         javax.swing.GroupLayout jPanel_SolucionLayout = new javax.swing.GroupLayout(jPanel_Solucion);
         jPanel_Solucion.setLayout(jPanel_SolucionLayout);
         jPanel_SolucionLayout.setHorizontalGroup(
             jPanel_SolucionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel_SolucionLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane2)
+                .addGroup(jPanel_SolucionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2)
+                    .addGroup(jPanel_SolucionLayout.createSequentialGroup()
+                        .addComponent(lbl_iteracion)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanel_SolucionLayout.setVerticalGroup(
             jPanel_SolucionLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel_SolucionLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 255, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(8, 8, 8)
+                .addComponent(lbl_iteracion)
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 226, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -275,6 +286,8 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
 
     private void btn_solucionarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_solucionarActionPerformed
         this.jPanel_Solucion.setVisible(true);
+        factory = new Factory();
+        SimplexMAX procMax = factory.simplexMAX();
         try {
             DefaultTableModel modeloSolucion = new DefaultTableModel();
             Matriz = new double[restricciones + 1][restricciones + variables + 1];
@@ -283,9 +296,10 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
                     this.Matriz[i][j] = Double.parseDouble(this.jTable_funcionLimitaciones.getValueAt(i, j + 1).toString());
                 }
             }
-            while (this.ComprobarResultado() != true) {
-                EtiquetaY[this.FilaPivote()] = EtiquetaX[this.ColumnaPivote()];
-                this.NuevaTabla(this.FilaPivote(), this.ColumnaPivote());
+            while (procMax.ComprobarResultado(restricciones, variables, Matriz) != true) {
+                EtiquetaY[procMax.FilaPivote(Matriz, restricciones, variables)] = EtiquetaX[procMax.ColumnaPivote(Matriz, restricciones, variables)];
+                Matriz = procMax.NuevaTabla(Matriz, restricciones, variables, procMax.FilaPivote(Matriz, restricciones, variables),
+                        procMax.ColumnaPivote(Matriz, restricciones, variables));
                 modeloSolucion.setColumnCount(restricciones + variables + 2);
                 modeloSolucion.setRowCount(restricciones + 1);
                 //--------------------------
@@ -310,6 +324,9 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
 
     private void btn_iteracionesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_iteracionesActionPerformed
         try {
+            this.lbl_iteracion.setVisible(true);
+            factory = new Factory();
+            SimplexMAX procMax = factory.simplexMAX();
             DefaultTableModel modeloSolucion = new DefaultTableModel();
             Matriz = new double[restricciones + 1][restricciones + variables + 1];
             for (int i = 0; i < (restricciones + 1); i++) {
@@ -320,10 +337,11 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
             int k = 0;
             iter++;
             if (iter <= iteracion) {
-                //lbl_Iteraccion.setText(": " + iter);
+                this.lbl_iteracion.setText("Iteracón: " + iter);
                 while (iter > k) {
-                    EtiquetaY[this.FilaPivote()] = EtiquetaX[this.ColumnaPivote()];
-                    this.NuevaTabla(this.FilaPivote(), this.ColumnaPivote());
+                    EtiquetaY[procMax.FilaPivote(Matriz, restricciones, variables)] = EtiquetaX[procMax.ColumnaPivote(Matriz, restricciones, variables)];
+                    Matriz = procMax.NuevaTabla(Matriz, restricciones, variables, procMax.FilaPivote(Matriz, restricciones, variables), procMax.ColumnaPivote(Matriz, restricciones, variables));
+                    //this.NuevaTabla(procMax.FilaPivote(Matriz, restricciones, variables), procMax.ColumnaPivote(Matriz, restricciones, variables));
                     modeloSolucion.setColumnCount(restricciones + variables + 2);
                     modeloSolucion.setRowCount(restricciones + 1);
                     //--------------------------
@@ -341,7 +359,7 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
             } else {
                 iter = 0;
                 iteracion = 0;
-                //lbl_Iteraccion.setText("Final");
+                this.lbl_iteracion.setText("Iteración Final");
                 this.btn_solucionar.setEnabled(true);
                 this.btn_iteraciones.setEnabled(false);
             }
@@ -399,68 +417,12 @@ public class GUI_Maximizacion extends javax.swing.JFrame {
     private javax.swing.JTable jTable_funcionLimitaciones;
     private javax.swing.JTable jTable_solucion;
     private javax.swing.JLabel lbl_IngreseFuncion;
+    private javax.swing.JLabel lbl_iteracion;
     private javax.swing.JLabel lbl_nRestricciones;
     private javax.swing.JLabel lbl_nVariables;
     private javax.swing.JLabel lbl_problemaLineal;
     private javax.swing.JSpinner spnner_restricciones;
     private javax.swing.JSpinner spnner_variables;
     // End of variables declaration//GEN-END:variables
-
-    public int ColumnaPivote() {
-        int pos = 0;
-        double aux = Matriz[restricciones][0];
-        for (int i = 1; i < restricciones + variables; i++) {
-            if (aux > Matriz[restricciones][i]) {
-                aux = Matriz[restricciones][i];
-                pos = i;
-            }
-        }
-        return pos;
-    }
-
-    public int FilaPivote() {
-        int columna = this.ColumnaPivote();
-        double temp = 0, razon = Matriz[0][variables + restricciones] / Matriz[0][columna];
-        int pos = 0;
-        for (int i = 1; i < restricciones; i++) {
-            if (Matriz[i][columna] != 0) {
-                temp = Matriz[i][variables + restricciones] / Matriz[i][columna];
-                if (razon > temp && temp >= 0) {
-                    razon = temp;
-                    pos = i;
-                }
-            }
-
-        }
-        return pos;
-    }
-
-    public void NuevaTabla(int Fila, int Columna) {
-        double pivote = Matriz[Fila][Columna], temp = 0;//--
-        for (int i = 0; i < restricciones + variables + 1; i++) {
-            Matriz[Fila][i] = Matriz[Fila][i] / pivote;
-        }
-        for (int i = 0; i < restricciones + 1; i++) {
-            temp = Matriz[i][Columna];
-            for (int j = 0; j < variables + restricciones + 1; j++) {
-                if (i != Fila) {
-                    Matriz[i][j] = Matriz[i][j] - temp * Matriz[Fila][j];
-                } else {
-                    break;
-                }
-            }
-        }
-    }
-
-    public boolean ComprobarResultado() {
-        boolean result = true;
-        for (int i = 0; i < restricciones + variables; i++) {
-            if (Matriz[restricciones][i] < 0) {
-                result = false;
-                break;
-            }
-        }
-        return result;
-    }
 
 }
